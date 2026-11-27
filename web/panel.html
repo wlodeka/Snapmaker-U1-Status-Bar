@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title data-i18n>Status Bar - Panel sterowania</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#0c121c; --card:#15202d; --field:#101923; --line:#26384a;
+  --text:#edf5ff; --muted:#a4bbd4; --accent:#67e4d4; --warning:#ffd297;
+  font:16px/1.5 system-ui,sans-serif;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); }
+[hidden] { display:none !important; }
+a { color:var(--accent); }
+main, .topbar {
+  width:100%; max-width:86rem; margin-inline:auto; padding-inline:clamp(1.35rem,5vw,5rem);
+}
+header {
+  background:#111a26; border-bottom:1px solid var(--line);
+}
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:.65rem clamp(2.5rem,5vw,5rem); min-height:4.25rem; padding-block:.65rem;
+}
+.brand {
+  display:block; padding:.5rem .75rem; border:1px solid #346371; border-radius:.65rem;
+  background:#153039; color:var(--text); font-size:clamp(.95rem,2vw,1.3rem);
+  font-weight:400; line-height:1.3; text-decoration:none;
+}
+header nav { display:grid; grid-template-columns:repeat(3,minmax(6.5rem,1fr)); gap:.5rem; }
+nav a {
+  display:grid; place-items:center; min-height:3rem; padding:.4rem;
+  border:1px solid var(--line); border-radius:.65rem; background:var(--card);
+  color:var(--muted); text-align:center; text-decoration:none; font-size:1rem; font-weight:400;
+}
+nav a:hover { background:#172434; color:var(--text); }
+nav a[aria-current="page"] { border-color:#346371; background:#153039; color:#9dfff0; }
+main { padding-block:2.45rem 3rem; }
+h1,h2,h3,p { margin:0; }
+h1,h2,h3 { font-weight:400; }
+h1, .page-title { font-size:clamp(1.5rem,3vw,2rem); line-height:1.2; }
+.page-title { margin-bottom:1.15rem; }
+h2 { font-size:1.15rem; margin-bottom:.8rem; }
+h3 { font-size:1rem; }
+.section-head {
+  display:flex; align-items:center; flex-wrap:wrap; justify-content:space-between;
+  gap:.65rem 1rem; margin-bottom:1.8rem;
+}
+.badge {
+  border:1px solid var(--line); border-radius:99px; padding:.24rem .8rem;
+  font-size:.86rem; color:var(--muted);
+}
+.badge[data-tone="up"] { color:var(--accent); border-color:#407767; }
+.badge[data-tone="down"] { color:var(--warning); border-color:#70563a; }
+.card { border:1px solid var(--line); border-radius:1rem; background:var(--card); padding:1.35rem; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; margin:0 0 1.25rem; }
+.metrics > div {
+  min-width:0; min-height:8rem; padding:1.1rem; background:linear-gradient(145deg,#172433,#131e2c);
+  border:1px solid var(--line); border-top:2px solid #386375; border-radius:.95rem;
+}
+.metrics > div:first-child { background:linear-gradient(145deg,#1b4148,#142532); }
+dt { color:var(--muted); font-size:.88rem; font-weight:650; }
+dd {
+  display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; margin:.58rem 0 0;
+  color:var(--accent); font-size:clamp(1.05rem,2.35vw,1.75rem); line-height:1.2;
+  font-weight:790; overflow-wrap:anywhere;
+}
+#swatch { display:inline-block; width:1rem; height:1rem; border:1px solid var(--muted); border-radius:.27rem; }
+#color-source { margin-top:.12rem; }
+progress { display:block; width:100%; margin-top:.4rem; height:.5rem; accent-color:var(--accent); }
+.pixel-row {
+  display:grid; grid-template-columns:repeat(60,minmax(0,1fr)); gap:1px; margin-top:.75rem;
+  background:#0c1118; padding:.35rem; border:1px solid #2b3542; border-radius:.45rem;
+}
+.pixel { height:1.15rem; background:#000; border-radius:2px; }
+.layout-strip .pixel { height:1.45rem; background:var(--zone-color); }
+.pixel[data-start] { border-inline-start:2px solid var(--zone-color); }
+.strip-labels { margin-top:.2rem; }
+.strip-legend { display:flex; flex-wrap:wrap; gap:.3rem 1rem; margin:.55rem 0 0; padding:0; list-style:none; }
+.strip-legend li { color:var(--muted); font-size:.83rem; }
+.strip-legend strong { color:var(--zone-color); }
+.layout-selects { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.65rem; }
+.layout-select {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.45rem;
+  border:1px solid var(--line); border-top-color:var(--zone-color);
+  border-radius:.65rem; background:var(--field); padding:.65rem;
+}
+.layout-select legend { padding:0 .25rem; color:var(--zone-color); }
+#layout-result { min-height:1.3em; margin-top:.6rem; }
+.settings-card + .settings-card { margin-top:1rem; }
+#panel-language { max-width:16rem; }
+.note, small { color:var(--muted); font-size:.83rem; }
+.setup { border-color:#635741; color:var(--warning); margin-bottom:.85rem; }
+.setup > a { display:block; margin-top:.35rem; }
+form { display:grid; gap:.85rem; margin:0; }
+fieldset { min-inline-size:0; margin:0; border:0; padding:0; }
+.zones, .pairs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; }
+.zone { border:1px solid var(--line); border-radius:.8rem; background:var(--field); padding:1rem; }
+.zone h3 { margin-bottom:.35rem; }
+.fields { display:grid; gap:.75rem; margin-top:.75rem; }
+.full { grid-column:1/-1; }
+label { display:grid; gap:.24rem; font-size:.9rem; }
+.check { display:flex; align-items:center; gap:.5rem; }
+input, select, button { font:inherit; }
+input[type="checkbox"] { width:1rem; height:1rem; margin:0; accent-color:var(--accent); }
+input[type="range"] { width:100%; margin:.15rem 0 0; accent-color:var(--accent); }
+input[type="color"] { width:100%; height:2.3rem; padding:.2rem; }
+input:not([type="checkbox"]):not([type="range"]), select {
+  width:100%; min-width:0; padding:.48rem .55rem; color:var(--text); background:var(--bg);
+  border:1px solid var(--line); border-radius:.4rem;
+}
+.range-label { display:flex; justify-content:space-between; gap:.5rem; }
+output { color:var(--accent); font-variant-numeric:tabular-nums; }
+.swatches { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.45rem; }
+.actions { display:flex; align-items:center; flex-wrap:wrap; gap:.55rem .95rem; }
+.led-actions { position:sticky; top:0; z-index:1; background:var(--bg); padding:.45rem 0; }
+button {
+  color:#0e2520; background:var(--accent); font-weight:700; border:0; border-radius:.5rem;
+  min-height:2.65rem; padding:.48rem .9rem; cursor:pointer;
+}
+button:disabled { opacity:.55; cursor:default; }
+input::file-selector-button {
+  margin-right:.7rem; border:0; border-radius:.35rem; padding:.3rem .65rem;
+  color:var(--accent); background:#203444; font:inherit; cursor:pointer;
+}
+#ota-progress { height:.65rem; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+[role="status"] { color:var(--muted); font-size:.87rem; }
+[role="status"][data-error="true"] { color:var(--warning); }
+@media (max-width:1150px) {
+  .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .layout-selects { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:790px) {
+  main, .topbar { padding-inline:1rem; }
+  .topbar { flex-wrap:wrap; }
+  header nav { flex-basis:100%; grid-template-columns:repeat(3,minmax(0,1fr)); }
+  nav a { min-height:2.75rem; padding:.35rem .2rem; font-size:.9rem; }
+  main { padding-block:1.55rem 2.5rem; }
+}
+@media (max-width:510px) {
+  .metrics { gap:.55rem; }
+  .metrics > div { min-height:6.2rem; padding:.7rem; }
+  .zones,.pairs { grid-template-columns:1fr; }
+  .card { padding:.85rem; }
+  .pixel-row { gap:1px; padding:.22rem; }
+  .pixel[data-start] { border-inline-start-width:1px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <a class="brand" href="#stan" data-i18n>STATUS BAR - PANEL STEROWANIA</a>
+    <nav aria-label="Sekcje panelu" data-i18n-label>
+      <a href="#stan" aria-current="page" data-i18n>Przegląd</a>
+      <a href="#led" data-i18n>Pasek LED</a>
+      <a href="#ustawienia" data-i18n>Ustawienia</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section data-page="stan" aria-labelledby="title">
+    <div class="section-head">
+      <h1 id="title" data-i18n>Przegląd</h1>
+      <span class="badge" id="connection" aria-live="polite" data-i18n>Moonraker · łączenie</span>
+    </div>
+    <div class="card setup" id="setup" hidden>
+      <span data-i18n>Połącz pasek z domową siecią Wi-Fi 2,4 GHz w zakładce</span>
+      <a href="#ustawienia" data-i18n>Ustawienia</a>.
+      <a id="new-address" hidden></a>
+    </div>
+    <dl class="metrics">
+        <div><dt data-i18n>Drukarka</dt><dd id="state">—</dd></div>
+        <div><dt data-i18n>Aktywna głowica</dt><dd id="head">—</dd></div>
+        <div><dt data-i18n>Filament</dt><dd><span id="swatch" hidden></span><span id="filament">—</span></dd>
+          <div class="note" id="color-source"></div></div>
+        <div><dt data-i18n>Postęp wydruku</dt><dd id="progress-text">—</dd>
+          <progress id="progress" value="0" max="100" aria-label="Postęp wydruku" data-i18n-label hidden></progress></div>
+    </dl>
+    <div class="card">
+        <h2 data-i18n>Podgląd paska LED</h2>
+        <div class="pixel-row" id="preview" aria-hidden="true"></div>
+        <ul class="strip-legend" id="preview-legend" aria-label="Zakresy stref LED" data-i18n-label></ul>
+    </div>
+  </section>
+
+  <section data-page="led" aria-labelledby="led-title" hidden>
+    <h2 class="page-title" id="led-title" data-i18n>Pasek LED</h2>
+    <form id="led-form">
+      <div class="actions led-actions">
+        <button id="save-led" data-i18n disabled>Zapisz ustawienia LED</button>
+        <p id="led-result" role="status"></p>
+      </div>
+      <fieldset class="card" id="layout-inputs" aria-labelledby="layout-title" disabled>
+        <h3 id="layout-title" data-i18n>Podział paska · 60 LED</h3>
+        <p class="note" data-i18n>Pasek pokazuje podział od razu. Zapisz ustawienia LED, aby zachować go po restarcie.</p>
+        <div class="pixel-row layout-strip" id="layout-strip" aria-hidden="true"></div>
+        <div class="range-label strip-labels note"><span>LED 0</span><span>LED 59</span></div>
+        <ul class="strip-legend" id="layout-legend" aria-label="Zakresy stref LED" data-i18n-label></ul>
+        <div class="fields" id="layout-ranges"></div>
+        <div class="layout-selects fields" id="layout-selects"></div>
+        <p id="layout-result" role="status"></p>
+      </fieldset>
+      <fieldset class="card" id="led-inputs" disabled>
+        <div class="zones fields" id="zone-inputs"></div>
+        <div class="fields">
+          <div><h3 data-i18n>Kolory zapasowe T0–T3</h3>
+            <small data-i18n>Dla stref z włączonym kolorem z Moonrakera, gdy w gotowości lub podczas druku brakuje koloru aktywnej głowicy.</small>
+            <div class="swatches">
+              <label>T0<input type="color" id="color-0"></label>
+              <label>T1<input type="color" id="color-1"></label>
+              <label>T2<input type="color" id="color-2"></label>
+              <label>T3<input type="color" id="color-3"></label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+  </section>
+
+  <section data-page="ustawienia" aria-labelledby="settings-title" hidden>
+    <h2 class="page-title" id="settings-title" data-i18n>Ustawienia</h2>
+    <div class="card settings-card">
+      <label>
+        <span data-i18n>Język panelu</span>
+        <select id="panel-language" disabled>
+          <option value="pl" lang="pl">Polski</option>
+          <option value="en" lang="en">English</option>
+        </select>
+      </label>
+      <p id="language-result" role="status"></p>
+    </div>
+    <form class="card settings-card" id="net-form" aria-labelledby="network-title">
+      <h3 id="network-title" data-i18n>Sieć</h3>
+      <fieldset id="net-inputs" class="pairs" disabled>
+        <label><span data-i18n>Nazwa sieci Wi-Fi (SSID)</span>
+          <input id="ssid" type="text" required maxlength="32" autocomplete="off">
+        </label>
+        <label><span data-i18n>Hasło Wi-Fi</span>
+          <input id="wifi-password" type="password" minlength="8" maxlength="64" autocomplete="new-password">
+          <small data-i18n>Puste pole zachowuje hasło zapisanej sieci.</small>
+        </label>
+        <label class="check full"><input id="open-wifi" type="checkbox"> <span data-i18n>Sieć Wi-Fi bez hasła</span></label>
+        <label><span data-i18n>Adres IPv4 Moonrakera</span>
+          <input id="moonraker-ip" type="text" inputmode="decimal" maxlength="15"
+                 placeholder="192.168.1.50" autocomplete="off">
+          <small data-i18n>Pusty adres wyłącza połączenie.</small>
+        </label>
+        <label><span data-i18n>Port Moonrakera</span>
+          <input id="moonraker-port" type="number" min="1" max="65535" step="1" value="7125" required>
+        </label>
+      </fieldset>
+      <div class="actions">
+        <button id="save-net" data-i18n disabled>Zapisz ustawienia sieci</button>
+        <p id="net-result" role="status"></p>
+      </div>
+    </form>
+    <form class="card settings-card" id="ota-form" aria-labelledby="ota-title">
+      <h3 id="ota-title"><span data-i18n>Aktualizacja OTA</span> · <span id="firmware-version">—</span></h3>
+      <p class="note" id="ota-info" data-i18n>Sprawdzanie dostępności aktualizacji…</p>
+      <label><span data-i18n>Plik aktualizacji</span>
+        <input id="firmware-file" type="file" accept=".bin" required disabled>
+      </label>
+      <progress id="ota-progress" max="100" aria-label="Postęp przesyłania firmware" data-i18n-label hidden></progress>
+      <div class="actions">
+        <button id="ota-upload" data-i18n disabled>Wgraj aktualizację</button>
+        <p id="ota-result" role="status"></p>
+      </div>
+    </form>
+  </section>
+</main>
+<script>
+"use strict";
+const element = id => document.getElementById(id);
+const english = {
+  "Status Bar - Panel sterowania":"Status Bar - Control Panel",
+  "STATUS BAR - PANEL STEROWANIA":"STATUS BAR - CONTROL PANEL",
+  "Sekcje panelu":"Panel sections",
+  "Przegląd":"Overview",
+  "Pasek LED":"LED strip",
+  "Ustawienia":"Settings",
+  "Połącz pasek z domową siecią Wi-Fi 2,4 GHz w zakładce":"Connect the LED strip to your 2.4 GHz home Wi-Fi in",
+  "Połącz się ze swoją siecią i otwórz panel pod adresem {0}":"Reconnect to your Wi-Fi and open the panel at {0}",
+  "Drukarka":"Printer",
+  "Aktywna głowica":"Active toolhead",
+  "Filament":"Filament",
+  "Postęp wydruku":"Print progress",
+  "Podgląd paska LED":"LED strip preview",
+  "Zakresy stref LED":"LED zone ranges",
+  "Kolor zapasowy":"Fallback color",
+  "Moonraker · łączenie":"Moonraker · connecting",
+  "Moonraker · połączony":"Moonraker · connected",
+  "Moonraker · rozłączony":"Moonraker · disconnected",
+  "Moonraker · brak adresu":"Moonraker · no address configured",
+  "Gotowość":"Ready",
+  "Drukowanie":"Printing",
+  "Pauza":"Paused",
+  "Wydruk zakończony":"Print complete",
+  "Wydruk anulowany":"Print canceled",
+  "Błąd drukarki":"Printer error",
+  "Nieznany stan":"Unknown state",
+  "Brak danych z Klippera":"No data from Klipper",
+  "Brak połączenia":"Offline",
+  "Zapisz ustawienia LED":"Save LED settings",
+  "Podział paska · 60 LED":"Strip layout · 60 LEDs",
+  "Pasek pokazuje podział od razu. Zapisz ustawienia LED, aby zachować go po restarcie.":
+    "The strip shows changes immediately. Save LED settings to keep the layout after a restart.",
+  "Granica":"Boundary",
+  "Początek strefy {0}, LED {1}":"Start of zone {0}, LED {1}",
+  "Strefa":"Zone",
+  "Od LED":"From LED",
+  "Do LED":"To LED",
+  "Stosowanie zakresów…":"Applying zone ranges…",
+  "Podgląd zakresów na pasku.":"Zone ranges are previewed on the strip.",
+  "Włącz strefę":"Enable zone",
+  "Jasność":"Brightness",
+  "Limit jasności":"Brightness limit",
+  "Kolor z Moonrakera":"Color from Moonraker",
+  "Tęcza":"Rainbow",
+  "Użyj kanału białego RGBW":"Use the RGBW white channel",
+  "Odcień bieli":"White tone",
+  "Neutralna":"Neutral",
+  "Ciepła":"Warm",
+  "Zimna":"Cool",
+  "Kolor ręczny":"Manual color",
+  "Animacja":"Effect",
+  "Prędkość":"Speed",
+  "Odwróć kierunek animacji":"Reverse effect direction",
+  "Automatyczna":"Automatic",
+  "Statyczna":"Static",
+  "Oddech":"Breathe",
+  "Fala":"Wave",
+  "Kometa":"Comet",
+  "Skaner":"Scanner",
+  "Postęp":"Progress",
+  "Puls":"Pulse",
+  "Przebieg po zakończeniu":"Success sweep",
+  "Alert błędu":"Error alert",
+  "Pościg":"Chase",
+  "Rozbłysk od środka":"Center burst",
+  "Iskry":"Sparkle",
+  "Zalewanie":"Wipe",
+  "Kolory zapasowe T0–T3":"Fallback colors T0–T3",
+  "Dla stref z włączonym kolorem z Moonrakera, gdy w gotowości lub podczas druku brakuje koloru aktywnej głowicy.":
+    "Used by zones with Moonraker colors if the active toolhead has no color while idle or printing.",
+  "Zapisano ustawienia LED w pamięci ESP32.":"LED settings saved to the ESP32.",
+  "Język panelu":"Panel language",
+  "Zapisano język panelu.":"Panel language saved.",
+  "Sieć":"Network",
+  "Nazwa sieci Wi-Fi (SSID)":"Wi-Fi network name (SSID)",
+  "Hasło Wi-Fi":"Wi-Fi password",
+  "Puste pole zachowuje hasło zapisanej sieci.":"Leave blank to keep the saved password for this network.",
+  "Sieć Wi-Fi bez hasła":"Open Wi-Fi network",
+  "Adres IPv4 Moonrakera":"Moonraker IPv4 address",
+  "Pusty adres wyłącza połączenie.":"Leave blank to disable the connection.",
+  "Port Moonrakera":"Moonraker port",
+  "Zapisz ustawienia sieci":"Save network settings",
+  "Zapisano ustawienia. Adres panelu: {0}":"Settings saved. Panel address: {0}",
+  "Zapisano ustawienia.":"Settings saved.",
+  "Nie udało się połączyć. Zachowano poprzednie ustawienia.":"Could not connect. The previous settings were kept.",
+  "Sprawdzanie Wi-Fi. Jeśli panel zmieni adres, pojawi się on w monitorze szeregowym.":
+    "Checking Wi-Fi. If the panel address changes, it will appear in the Serial Monitor.",
+  "Zapisano ustawienia sieci.":"Network settings saved.",
+  "Po zmianie sieci sprawdź adres panelu w monitorze szeregowym.":"After changing Wi-Fi, check the panel address in the Serial Monitor.",
+  "Aktualizacja OTA":"OTA update",
+  "Aktualizacja":"Update",
+  "Sprawdzanie dostępności aktualizacji…":"Checking whether OTA is available…",
+  "Plik aktualizacji":"Update file",
+  "Postęp przesyłania firmware":"Firmware upload progress",
+  "Wgraj aktualizację":"Upload update",
+  "Trwa aktualizacja firmware.":"Firmware update in progress.",
+  "Brak partycji OTA. Wgraj tę wersję przez USB.":"No OTA partition found. Install this version over USB.",
+  "Otwórz panel przez adres IPv4 urządzenia w domowej sieci Wi-Fi.":
+    "Open the panel using the device's IPv4 address on your home Wi-Fi.",
+  "Wybierz plik firmware.bin z PlatformIO. Limit {0} B.":"Select firmware.bin from PlatformIO. Limit: {0} B.",
+  "Weryfikacja obrazu…":"Verifying the image…",
+  "Utracono połączenie podczas aktualizacji.":"Connection lost during the update.",
+  "Przekroczono czas oczekiwania na aktualizację.":"The update timed out.",
+  "Wybierz plik .bin mieszczący się w limicie obrazu OTA.":"Select a .bin file within the OTA size limit.",
+  "Przesyłanie firmware…":"Uploading firmware…",
+  "Brak potwierdzenia zapisu firmware.":"Firmware installation was not confirmed.",
+  "Firmware zapisany. Po restarcie odśwież panel.":"Firmware installed. Refresh the panel after the restart.",
+  "przekroczono czas oczekiwania ({0} s).":"request timed out ({0} s).",
+  "przerwano odbiór odpowiedzi HTTP {0}":"HTTP {0} response was interrupted",
+  "błąd połączenia HTTP":"HTTP connection error",
+  "oczekiwano JSON, odebrano {0}.":"expected JSON, received {0}.",
+  "brak typu treści":"no content type",
+  "odpowiedź zawiera niepoprawny JSON.":"the response contains invalid JSON.",
+  "oczekiwano obiektu JSON.":"expected a JSON object.",
+  "niepełne dane ustawień w odpowiedzi JSON.":"the JSON response is missing settings.",
+  "niepełne dane stanu w odpowiedzi JSON.":"the JSON response is missing status data.",
+  "brak wyniku zapisu w odpowiedzi JSON.":"the JSON response is missing the save result.",
+  "brak potwierdzenia zapisu języka.":"the language change was not confirmed.",
+  "Strona jest niedostępna.":"The page is unavailable.",
+  "Wyślij ustawienia w formacie JSON.":"Send the settings in JSON format.",
+  "Dane ustawień są za duże.":"The settings payload is too large.",
+  "Brak lub niepełna treść żądania.":"The request body is missing or incomplete.",
+  "Treść żądania musi być poprawnym obiektem JSON.":"The request body must be a valid JSON object.",
+  "Błąd tworzenia odpowiedzi JSON.":"Could not create the JSON response.",
+  "Sprawdź wartości ustawień LED.":"Check the LED settings.",
+  "Błąd zapisu ustawień LED w pamięci.":"Could not save the LED settings.",
+  "Podaj trzy rosnące granice stref z zakresu 1–59.":"Enter three increasing zone boundaries from 1 to 59.",
+  "Trwa sprawdzanie połączenia Wi-Fi.":"The Wi-Fi connection is being checked.",
+  "Sprawdź SSID, hasło Wi-Fi, adres IPv4 i port.":"Check the SSID, Wi-Fi password, IPv4 address, and port.",
+  "Błąd zapisu ustawień sieci w pamięci.":"Could not save the network settings.",
+  "Wybierz język Polski lub English.":"Choose Polish or English.",
+  "Błąd zapisu języka w pamięci.":"Could not save the panel language.",
+  "Wybierz plik firmware.bin.":"Select firmware.bin.",
+  "Brak pełnego obrazu firmware.":"The firmware image is missing or incomplete.",
+  "Aktualizacja jest dostępna przez adres IPv4 w domowej sieci i wymaga partycji OTA.":
+    "OTA requires an OTA partition and access through the device's home-network IPv4 address.",
+  "Plik przekracza rozmiar partycji OTA.":"The file exceeds the OTA partition size.",
+  "Nie można rozpocząć zapisu firmware.":"Could not start writing the firmware.",
+  "Nie można zapisać obrazu firmware.":"Could not write the firmware image.",
+  "Przerwano przesyłanie firmware.":"The firmware upload was interrupted.",
+  "Wyślij plik firmware.bin z zakładki Aktualizacja.":"Upload firmware.bin from the OTA update section.",
+  "Urządzenie utraciło dostęp do sieci domowej.":"The device lost its connection to the home Wi-Fi.",
+  "Weryfikacja nie powiodła się. Wybierz firmware.bin dla U1 Status Bar.":
+    "Verification failed. Select firmware.bin for U1 Status Bar."
+};
+let language = "pl";
+
+function t(text, ...values) {
+  const translated = language === "en" && Object.hasOwn(english, text) ? english[text] : text;
+  return values.length ? translated.replace(/\{(\d+)\}/g, (_, index) => values[index]) : translated;
+}
+
+const pixelCount = 60;
+// This order matches both the physical strip and the existing configuration.
+const zones = [
+  {name:"B", color:"#53e3ca"},
+  {name:"D", color:"#f184ad"},
+  {name:"C", color:"#79aeff"},
+  {name:"A", color:"#ffca70", white:true}
+];
+const cardOrder = [3, 0, 2, 1];
+const effects = ["Automatyczna", "Statyczna", "Oddech", "Fala", "Kometa", "Skaner",
+                 "Postęp", "Puls", "Przebieg po zakończeniu", "Alert błędu", "Pościg",
+                 "Rozbłysk od środka", "Iskry", "Zalewanie"];
+let boundaries = [9, 33, 42];
+// Screen only: lit pixels start at a visible floor and keep their hue; off pixels stay black.
+const previewFloor = 96;
+const previewLevels = Array.from({length:256}, (_, i) =>
+  Math.round(previewFloor + (255 - previewFloor) * Math.pow(i / 255, 0.52)));
+const pages = [...document.querySelectorAll("[data-page]")];
+const pageLinks = [...document.querySelectorAll("header nav a")];
+
+function showPage() {
+  const hash = ["#siec", "#ota"].includes(location.hash) ? "#ustawienia" : location.hash;
+  const page = pages.find(section => "#" + section.dataset.page === hash) || pages[0];
+  for (const section of pages) section.hidden = section !== page;
+  for (const link of pageLinks) {
+    if (link.hash === "#" + page.dataset.page) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener("hashchange", showPage);
+showPage();
+
+function range(id, name, min) {
+  return '<label><span class="range-label"><span data-i18n>' + name + '</span> <output for="' + id +
+         '"></output></span><input id="' + id + '" type="range" min="' + min +
+         '" max="100"></label>';
+}
+
+function select(id, label, choices, translateChoices = true) {
+  const options = choices.map((name, index) =>
+    '<option value="' + index + '"' + (translateChoices ? ' data-i18n' : '') + '>' + name + '</option>').join("");
+  return '<label><span data-i18n>' + label + '</span><select id="' + id + '">' + options + '</select></label>';
+}
+
+function makeStrip(id) {
+  const row = element(id);
+  return Array.from({length:pixelCount}, (_, i) => {
+    const dot = document.createElement("span");
+    dot.className = "pixel";
+    dot.title = "LED " + i;
+    row.append(dot);
+    return dot;
+  });
+}
+
+const preview = makeStrip("preview");
+const layoutPixels = makeStrip("layout-strip");
+
+const pixelOptions = Array.from({length:pixelCount}, (_, i) => String(i));
+for (const [index, zone] of zones.entries()) {
+  if (index < boundaries.length) {
+    const id = "boundary-" + index;
+    element("layout-ranges").insertAdjacentHTML("beforeend",
+      '<label><span class="range-label"><span><span data-i18n>Granica</span> ' + zone.name + ' / ' +
+      zones[index + 1].name + '</span>' +
+      ' <output for="' + id + '"></output></span><input type="range" id="' + id + '"></label>');
+    element(id).addEventListener("input", event => updateBoundary(index, Number(event.target.value)));
+  }
+  element("layout-selects").insertAdjacentHTML("beforeend",
+    '<fieldset class="layout-select" style="--zone-color:' + zone.color + '"><legend><span data-i18n>Strefa</span> ' +
+    zone.name + '</legend>' + select("start-" + index, "Od LED", pixelOptions, false) +
+    select("end-" + index, "Do LED", pixelOptions, false) + '</fieldset>');
+  element("start-" + index).addEventListener("change", event =>
+    updateBoundary(index - 1, Number(event.target.value)));
+  element("end-" + index).addEventListener("change", event =>
+    updateBoundary(index, Number(event.target.value) + 1));
+}
+
+function boundaryLimits(index) {
+  return [(boundaries[index - 1] ?? 0) + 1, (boundaries[index + 1] ?? pixelCount) - 1];
+}
+
+function updateSelect(id, value, min, max) {
+  const control = element(id);
+  for (const option of control.options) {
+    const number = Number(option.value);
+    option.disabled = number < min || number > max;
+  }
+  control.value = value;
+  control.disabled = min === max;
+}
+
+function renderLayout() {
+  const edges = [0, ...boundaries, pixelCount];
+  const legend = zones.map((zone, index) => {
+    const start = edges[index];
+    const end = edges[index + 1];
+    for (let i = start; i < end; i++) {
+      for (const dot of [preview[i], layoutPixels[i]]) {
+        dot.style.setProperty("--zone-color", zone.color);
+        dot.toggleAttribute("data-start", i === start);
+        dot.title = "LED " + i + " · " + zone.name;
+      }
+    }
+    if (index) {
+      const [min, max] = boundaryLimits(index - 1);
+      updateSelect("start-" + index, start, min, max);
+    } else {
+      updateSelect("start-0", 0, 0, 0);
+    }
+    if (index < boundaries.length) {
+      const [min, max] = boundaryLimits(index);
+      const slider = element("boundary-" + index);
+      slider.min = min;
+      slider.max = max;
+      slider.value = end;
+      slider.setAttribute("aria-valuetext", t("Początek strefy {0}, LED {1}", zones[index + 1].name, end));
+      document.querySelector('output[for="' + slider.id + '"]').value = "LED " + end;
+      updateSelect("end-" + index, end - 1, min - 1, max - 1);
+    } else {
+      updateSelect("end-" + index, pixelCount - 1, pixelCount - 1, pixelCount - 1);
+    }
+    return '<li style="--zone-color:' + zone.color + '"><strong>' + zone.name +
+           '</strong> · ' + start + '–' + (end - 1) + ' · ' + (end - start) + ' LED</li>';
+  }).join("");
+  element("layout-legend").innerHTML = legend;
+  element("preview-legend").innerHTML = legend;
+}
+
+function validBoundaries(value) {
+  return Array.isArray(value) && value.length === zones.length - 1 &&
+         value.every((edge, i) => Number.isInteger(edge) && edge < pixelCount &&
+                                  edge > (value[i - 1] ?? 0));
+}
+
+let pendingLayout = null;
+let layoutTimer = null;
+let layoutSending = false;
+
+function updateBoundary(index, value) {
+  if (index < 0 || index >= boundaries.length || value === boundaries[index]) return;
+  const next = boundaries.slice();
+  next[index] = value;
+  if (!validBoundaries(next)) return;
+  boundaries = next;
+  renderLayout();
+  pendingLayout = next;
+  result("layout-result", "Stosowanie zakresów…");
+  scheduleLayout();
+}
+
+function scheduleLayout() {
+  if (!layoutSending && layoutTimer === null && pendingLayout) {
+    layoutTimer = setTimeout(sendLayout, 70);
+  }
+}
+
+async function sendLayout() {
+  layoutTimer = null;
+  const next = pendingLayout;
+  pendingLayout = null;
+  layoutSending = true;
+  try {
+    await api("/api/led/layout", {boundaries:next});
+    if (!pendingLayout) result("layout-result", "Podgląd zakresów na pasku.");
+  } catch (error) {
+    if (!pendingLayout) result("layout-result", error.message, true);
+  } finally {
+    layoutSending = false;
+    scheduleLayout();
+  }
+}
+
+renderLayout();
+
+for (const index of cardOrder) {
+  const zone = zones[index];
+  const whiteOptions = zone.white ?
+    '<label class="check"><input type="checkbox" id="interior-white"> <span data-i18n>Użyj kanału białego RGBW</span></label>' +
+    select("white", "Odcień bieli", ["Neutralna", "Ciepła", "Zimna"]) : "";
+  element("zone-inputs").insertAdjacentHTML("beforeend",
+    '<div class="zone"><h3><span data-i18n>Strefa</span> ' + zone.name + '</h3><div class="fields">' +
+    '<label class="check"><input type="checkbox" id="enabled-' + index + '"> <span data-i18n>Włącz strefę</span></label>' +
+    range("brightness-" + index, "Jasność", 0) + range("limit-" + index, "Limit jasności", 0) +
+    '<label class="check"><input type="checkbox" id="auto-color-' + index + '"> <span data-i18n>Kolor z Moonrakera</span></label>' +
+    '<label class="check"><input type="checkbox" id="rainbow-' + index + '"> <span data-i18n>Tęcza</span></label>' +
+    whiteOptions + '<label><span data-i18n>Kolor ręczny</span><input type="color" id="manual-color-' + index + '"></label>' +
+    select("effect-" + index, "Animacja", effects) + range("speed-" + index, "Prędkość", 1) +
+    '<label class="check"><input type="checkbox" id="reverse-' + index +
+    '"> <span data-i18n>Odwróć kierunek animacji</span></label></div></div>');
+  element("auto-color-" + index).addEventListener("change", () => setColorControls(index));
+  element("rainbow-" + index).addEventListener("change", () => setColorControls(index));
+  if (zone.white) element("interior-white").addEventListener("change", () => setColorControls(index));
+}
+
+function setColorControls(index) {
+  const automatic = element("auto-color-" + index).checked;
+  const rainbowInput = element("rainbow-" + index);
+  rainbowInput.disabled = automatic;
+  const rainbow = !automatic && rainbowInput.checked;
+  let white = false;
+  if (zones[index].white) {
+    const checkbox = element("interior-white");
+    checkbox.disabled = automatic || rainbow;
+    white = !checkbox.disabled && checkbox.checked;
+    element("white").disabled = !white;
+  }
+  element("manual-color-" + index).disabled = automatic || rainbow || white;
+  for (const id of ["effect-", "speed-", "reverse-"]) element(id + index).disabled = rainbow;
+}
+
+function showRange(input) {
+  document.querySelector('output[for="' + input.id + '"]').value = input.value + "%";
+}
+
+for (const input of document.querySelectorAll('#led-inputs input[type="range"]')) {
+  input.addEventListener("input", () => showRange(input));
+}
+
+const translatedText = [...document.querySelectorAll("[data-i18n]")].map(node => [node, node.textContent.trim()]);
+const translatedLabels = [...document.querySelectorAll("[data-i18n-label]")].map(node => [node, node.getAttribute("aria-label")]);
+const notices = new Map();
+
+function applyLanguage(next) {
+  language = next;
+  document.documentElement.lang = language;
+  element("panel-language").value = language;
+  for (const [node, source] of translatedText) node.textContent = t(source);
+  for (const [node, source] of translatedLabels) node.setAttribute("aria-label", t(source));
+  for (const [id, [message, values]] of notices) setText(id, t(message, ...values));
+  renderLayout();
+}
+
+function result(id, message, error = false, ...values) {
+  const node = element(id);
+  node.dataset.error = error;
+  notices.set(id, [message, values]);
+  node.textContent = t(message, ...values);
+}
+
+// The ESP32 WebServer handles one connection at a time.
+let apiQueue = Promise.resolve();
+let firmwareBusy = false;
+let firmwareAvailable = false;
+let firmwareCapacity = 0;
+function api(path, settings) {
+  if (firmwareBusy) return Promise.reject(new Error(t("Trwa aktualizacja firmware.")));
+  const request = apiQueue.then(() => requestApi(path, settings));
+  apiQueue = request.catch(() => {});
+  return request;
+}
+
+async function requestApi(path, settings) {
+  const method = settings === undefined ? "GET" : "POST";
+  const label = method + " " + path;
+  const controller = new AbortController();
+  const timeoutMs = method === "GET" ? 8000 : 12000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+  let body;
+  try {
+    const options = {method, cache:"no-store", credentials:"omit", signal:controller.signal};
+    if (method === "POST") {
+      options.headers = {"Content-Type":"application/json"};
+      options.body = JSON.stringify(settings);
+    }
+    response = await fetch(path, options);
+    body = await response.text();
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(label + ": " + t("przekroczono czas oczekiwania ({0} s).", timeoutMs / 1000));
+    }
+    const failure = response ? t("przerwano odbiór odpowiedzi HTTP {0}", response.status)
+                             : t("błąd połączenia HTTP");
+    throw new Error(label + ": " + failure + " (" + error.message + ").");
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  return readApiPayload(label, response.status, response.headers.get("Content-Type"), body);
+}
+
+function readApiPayload(label, status, header, body) {
+  const http = label + ": HTTP " + status;
+  const type = (header || "").split(";")[0].trim().toLowerCase();
+  if (type !== "application/json") {
+    throw new Error(http + ", " + t("oczekiwano JSON, odebrano {0}.", type || t("brak typu treści")));
+  }
+  let payload;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    throw new Error(http + ", " + t("odpowiedź zawiera niepoprawny JSON."));
+  }
+  if (status < 200 || status >= 300) {
+    const detail = typeof payload?.error === "string" ? ": " + t(payload.error) : ".";
+    throw new Error(http + detail);
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error(http + ", " + t("oczekiwano obiektu JSON."));
+  }
+  return payload;
+}
+
+async function loadSettings() {
+  if (firmwareBusy) return;
+  try {
+    const {led, network, language: storedLanguage} = await api("/api/settings");
+    if (!["pl", "en"].includes(storedLanguage) ||
+        !Array.isArray(led?.zones) || led.zones.length !== zones.length ||
+        !led.zones.every(zone => zone && typeof zone.enabled === "boolean" &&
+          Number.isInteger(zone.brightness) && Number.isInteger(zone.limit) &&
+          typeof zone.automaticColor === "boolean" && typeof zone.manualColor === "string" &&
+          typeof zone.manualRainbow === "boolean" &&
+          Number.isInteger(zone.effect) && Number.isInteger(zone.speed) && typeof zone.reverse === "boolean") ||
+        !validBoundaries(led.boundaries) || typeof led.interiorWhite !== "boolean" ||
+        !Number.isInteger(led.white) ||
+        !Array.isArray(led.fallback) || led.fallback.length !== 4 ||
+        typeof network?.ssid !== "string" || typeof network.moonrakerIp !== "string" ||
+        !Number.isInteger(network.moonrakerPort)) {
+      throw new Error("GET /api/settings: " + t("niepełne dane ustawień w odpowiedzi JSON."));
+    }
+    boundaries = led.boundaries;
+    applyLanguage(storedLanguage);
+    element("interior-white").checked = led.interiorWhite;
+    element("white").value = led.white;
+    led.zones.forEach((zone, i) => {
+      element("enabled-" + i).checked = zone.enabled;
+      element("brightness-" + i).value = zone.brightness;
+      element("limit-" + i).value = zone.limit;
+      element("auto-color-" + i).checked = zone.automaticColor;
+      element("rainbow-" + i).checked = zone.manualRainbow;
+      element("manual-color-" + i).value = zone.manualColor;
+      element("effect-" + i).value = zone.effect;
+      element("speed-" + i).value = zone.speed;
+      element("reverse-" + i).checked = zone.reverse;
+      setColorControls(i);
+    });
+    led.fallback.forEach((color, i) => { element("color-" + i).value = color; });
+    document.querySelectorAll('#led-inputs input[type="range"]').forEach(showRange);
+    element("ssid").value = network.ssid;
+    element("open-wifi").checked = network.openWifi;
+    element("wifi-password").disabled = network.openWifi;
+    element("moonraker-ip").value = network.moonrakerIp;
+    element("moonraker-port").value = network.moonrakerPort;
+    element("layout-inputs").disabled = false;
+    element("led-inputs").disabled = false;
+    element("net-inputs").disabled = false;
+    element("save-led").disabled = false;
+    element("save-net").disabled = false;
+    element("panel-language").disabled = false;
+    result("language-result", "");
+    result("layout-result", "");
+    result("led-result", "");
+    result("net-result", "");
+  } catch (error) {
+    result("language-result", error.message, true);
+    result("layout-result", error.message, true);
+    result("led-result", error.message, true);
+    result("net-result", error.message, true);
+    setTimeout(loadSettings, 2500);
+  }
+}
+
+function setText(id, text) {
+  if (element(id).textContent !== text) element(id).textContent = text;
+}
+
+function clearTelemetry() {
+  for (const id of ["state", "head", "filament", "progress-text"]) setText(id, "—");
+  element("swatch").hidden = true;
+  element("progress").hidden = true;
+  setText("color-source", "");
+  preview.forEach(pixel => { pixel.style.backgroundColor = ""; });
+}
+
+let waitingNetwork = false;
+
+function setFirmwareControls() {
+  const fileInput = element("firmware-file");
+  fileInput.disabled = !firmwareAvailable || firmwareBusy;
+  element("ota-upload").disabled = fileInput.disabled || !fileInput.files.length;
+}
+
+function showStatus(status) {
+  if (typeof status.printer !== "string" || typeof status.pixels !== "string" ||
+      status.pixels.length !== preview.length * 6) {
+    throw new Error("GET /api/status: " + t("niepełne dane stanu w odpowiedzi JSON."));
+  }
+  const online = status.moonrakerConnected;
+  setText("connection", t(online ? "Moonraker · połączony" :
+    (status.moonrakerConfigured ? "Moonraker · rozłączony" : "Moonraker · brak adresu")));
+  element("connection").dataset.tone = online ? "up" : "down";
+  firmwareAvailable = status.firmwareAvailable === true;
+  firmwareCapacity = status.firmwareCapacity || 0;
+  setText("firmware-version", status.firmwareVersion ? "v" + status.firmwareVersion : "—");
+  setText("ota-info", !firmwareCapacity ? t("Brak partycji OTA. Wgraj tę wersję przez USB.") :
+    !firmwareAvailable ? t("Otwórz panel przez adres IPv4 urządzenia w domowej sieci Wi-Fi.") :
+    t("Wybierz plik firmware.bin z PlatformIO. Limit {0} B.", firmwareCapacity.toLocaleString(language)));
+  setFirmwareControls();
+  setText("state", t(status.printer));
+  setText("head", status.head === null ? "—" : "T" + status.head);
+  setText("filament", status.filament || "—");
+  element("swatch").hidden = !status.filament;
+  element("swatch").style.background = status.filament || "";
+  setText("color-source", status.filament ? (status.fallback ? t("Kolor zapasowy") : "Moonraker") : "");
+  setText("progress-text", status.progress === null ? "—" : status.progress + "%");
+  element("progress").hidden = status.progress === null;
+  element("progress").value = status.progress ?? 0;
+  preview.forEach((pixel, i) => {
+    const offset = i * 6;
+    const rgb = parseInt(status.pixels.slice(offset, offset + 6), 16);
+    const red = (rgb >> 16) & 255;
+    const green = (rgb >> 8) & 255;
+    const blue = rgb & 255;
+    const peak = Math.max(red, green, blue);
+    const gain = peak ? previewLevels[peak] / peak : 0;
+    const color = "rgb(" + Math.round(red * gain) + ", " + Math.round(green * gain) +
+                  ", " + Math.round(blue * gain) + ")";
+    if (pixel.style.backgroundColor !== color) pixel.style.backgroundColor = color;
+  });
+
+  element("setup").hidden = !status.setup;
+  const address = element("new-address");
+  const showAddress = status.setup && Boolean(status.ip) && status.networkUpdate !== "pending";
+  address.hidden = !showAddress;
+  if (showAddress) {
+    address.href = "http://" + status.ip + "/";
+    address.textContent = t("Połącz się ze swoją siecią i otwórz panel pod adresem {0}", status.ip);
+  }
+  if (waitingNetwork && status.networkUpdate !== "pending") {
+    const saved = status.networkUpdate === "saved";
+    const rejected = status.networkUpdate === "rejected";
+    if (saved) {
+      result("net-result", status.ip ? "Zapisano ustawienia. Adres panelu: {0}" : "Zapisano ustawienia.",
+             false, status.ip);
+      element("wifi-password").value = "";
+    } else {
+      result("net-result", rejected ? "Nie udało się połączyć. Zachowano poprzednie ustawienia."
+                                    : "Błąd zapisu ustawień sieci w pamięci.", true);
+    }
+    waitingNetwork = false;
+    element("save-net").disabled = false;
+  }
+}
+
+async function poll() {
+  try {
+    if (!firmwareBusy) showStatus(await api("/api/status"));
+  } catch (error) {
+    setText("connection", error.message);
+    element("connection").dataset.tone = "down";
+    firmwareAvailable = false;
+    setFirmwareControls();
+    clearTelemetry();
+    if (waitingNetwork) {
+      result("net-result", error.message + " " + t("Po zmianie sieci sprawdź adres panelu w monitorze szeregowym."), true);
+    }
+  } finally {
+    setTimeout(poll, document.hidden ? 1500 : 330);
+  }
+}
+
+element("open-wifi").addEventListener("change", event => {
+  const input = element("wifi-password");
+  input.disabled = event.target.checked;
+  if (input.disabled) input.value = "";
+});
+
+element("panel-language").addEventListener("change", async event => {
+  const control = event.target;
+  const requested = control.value;
+  control.disabled = true;
+  try {
+    const response = await api("/api/language", {language:requested});
+    if (response.language !== requested) {
+      throw new Error("POST /api/language: " + t("brak potwierdzenia zapisu języka."));
+    }
+    applyLanguage(response.language);
+    result("language-result", "Zapisano język panelu.");
+  } catch (error) {
+    control.value = language;
+    result("language-result", error.message, true);
+  } finally {
+    control.disabled = false;
+  }
+});
+
+element("led-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  element("save-led").disabled = true;
+  element("layout-inputs").disabled = true;
+  element("led-inputs").disabled = true;
+  clearTimeout(layoutTimer);
+  layoutTimer = null;
+  pendingLayout = null;
+  try {
+    await api("/api/led", {
+      boundaries,
+      interiorWhite:element("interior-white").checked,
+      white:Number(element("white").value),
+      zones:zones.map((_, i) => ({
+        enabled:element("enabled-" + i).checked,
+        brightness:Number(element("brightness-" + i).value),
+        limit:Number(element("limit-" + i).value),
+        automaticColor:element("auto-color-" + i).checked,
+        manualRainbow:element("rainbow-" + i).checked,
+        manualColor:element("manual-color-" + i).value,
+        effect:Number(element("effect-" + i).value),
+        speed:Number(element("speed-" + i).value),
+        reverse:element("reverse-" + i).checked
+      })),
+      fallback:[0,1,2,3].map(i => element("color-" + i).value)
+    });
+    result("layout-result", "");
+    result("led-result", "Zapisano ustawienia LED w pamięci ESP32.");
+  } catch (error) {
+    result("led-result", error.message, true);
+  } finally {
+    element("layout-inputs").disabled = false;
+    element("led-inputs").disabled = false;
+    element("save-led").disabled = false;
+  }
+});
+
+element("net-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  element("save-net").disabled = true;
+  try {
+    const {result: update} = await api("/api/network", {
+      ssid:element("ssid").value,
+      wifiPassword:element("wifi-password").value,
+      openWifi:element("open-wifi").checked,
+      moonrakerIp:element("moonraker-ip").value.trim(),
+      moonrakerPort:Number(element("moonraker-port").value)
+    });
+    if (update === "pending") {
+      waitingNetwork = true;
+      result("net-result", "Sprawdzanie Wi-Fi. Jeśli panel zmieni adres, pojawi się on w monitorze szeregowym.");
+    } else if (update === "saved") {
+      result("net-result", "Zapisano ustawienia sieci.");
+      element("wifi-password").value = "";
+    } else {
+      throw new Error("POST /api/network: " + t("brak wyniku zapisu w odpowiedzi JSON."));
+    }
+  } catch (error) {
+    result("net-result", error.message, true);
+  } finally {
+    element("save-net").disabled = waitingNetwork;
+  }
+});
+
+function sendFirmware(file) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", "/api/firmware");
+    request.timeout = 120000;
+    request.setRequestHeader("Content-Type", "application/octet-stream");
+    request.upload.onprogress = event => {
+      if (event.lengthComputable) {
+        element("ota-progress").value = 100 * event.loaded / event.total;
+        if (event.loaded === event.total) result("ota-result", "Weryfikacja obrazu…");
+      }
+    };
+    request.onload = () => {
+      try {
+        resolve(readApiPayload(t("Aktualizacja"), request.status,
+                               request.getResponseHeader("Content-Type"), request.responseText));
+      } catch (error) {
+        reject(error);
+      }
+    };
+    request.onerror = () => reject(new Error(t("Utracono połączenie podczas aktualizacji.")));
+    request.ontimeout = () => reject(new Error(t("Przekroczono czas oczekiwania na aktualizację.")));
+    request.send(file);
+  });
+}
+
+element("firmware-file").addEventListener("change", setFirmwareControls);
+element("ota-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const file = element("firmware-file").files[0];
+  if (!file || !firmwareAvailable || firmwareBusy) return;
+  if (!file.name.toLowerCase().endsWith(".bin") || !file.size || file.size > firmwareCapacity) {
+    result("ota-result", "Wybierz plik .bin mieszczący się w limicie obrazu OTA.", true);
+    return;
+  }
+  firmwareBusy = true;
+  setFirmwareControls();
+  const progress = element("ota-progress");
+  progress.value = 0;
+  progress.hidden = false;
+  result("ota-result", "Przesyłanie firmware…");
+  try {
+    const update = await apiQueue.then(() => sendFirmware(file));
+    if (update.restarting !== true) throw new Error(t("Brak potwierdzenia zapisu firmware."));
+    progress.value = 100;
+    result("ota-result", "Firmware zapisany. Po restarcie odśwież panel.");
+  } catch (error) {
+    firmwareBusy = false;
+    progress.hidden = true;
+    setFirmwareControls();
+    result("ota-result", error.message, true);
+  }
+});
+
+loadSettings();
+poll();
+</script>
+</body>
+</html>

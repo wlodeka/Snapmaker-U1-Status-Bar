@@ -1,0 +1,31 @@
+{
+  "name": "Waveshare ESP32-S3-Zero (ESP32-S3FH4R2)",
+  "vendor": "Waveshare",
+  "url": "https://www.waveshare.com/esp32-s3-zero.htm",
+  "frameworks": ["arduino"],
+  "build": {
+    "arduino": {
+      "memory_type": "qio_qspi"
+    },
+    "core": "esp32",
+    "mcu": "esp32s3",
+    "variant": "esp32s3",
+    "f_cpu": "240000000L",
+    "f_flash": "80000000L",
+    "flash_mode": "qio",
+    "extra_flags": [
+      "-DBOARD_HAS_PSRAM",
+      "-DARDUINO_USB_MODE=1",
+      "-DARDUINO_USB_CDC_ON_BOOT=1"
+    ],
+    "hwids": [["0x303A", "0x1001"]]
+  },
+  "upload": {
+    "flash_size": "4MB",
+    "maximum_size": 2031616,
+    "maximum_ram_size": 327680,
+    "protocol": "esptool",
+    "protocols": ["esptool"],
+    "require_upload_port": true
+  }
+}
